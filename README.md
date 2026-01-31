@@ -1,6 +1,6 @@
 # OpenClaw Sandbox Browser
 
-A Dockerized Chromium browser with CDP (Chrome DevTools Protocol) support for browser automation.
+A Dockerized Google Chrome browser with CDP (Chrome DevTools Protocol) support for browser automation.
 
 ## Quick Start
 
@@ -48,7 +48,7 @@ services:
 
 ## Why --shm-size is Required
 
-This image removed the `--disable-dev-shm-usage` flag from Chromium to fix click operation timeouts. Without this flag, Chrome uses `/dev/shm` for temporary storage during operations like:
+This image removed the `--disable-dev-shm-usage` flag from Chrome to fix click operation timeouts. Without this flag, Chrome uses `/dev/shm` for temporary storage during operations like:
 
 - Calculating element bounding boxes for clicks
 - Rendering complex pages

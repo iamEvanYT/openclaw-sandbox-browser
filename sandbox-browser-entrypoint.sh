@@ -73,12 +73,10 @@ CHROME_ARGS+=(
   "--metrics-recording-only"
   "--no-sandbox"
   "--enable-features=NetworkService,NetworkServiceInProcess"
-  "--disable-blink-features=AutomationControlled",
-  "--oauth2-client-id=77185425430.apps.googleusercontent.com",
-  "--oauth2-client-secret=OTJgUOQcT7lO7GsGZq2G4IlT",
+  "--disable-blink-features=AutomationControlled"
 )
 
-chromium "${CHROME_ARGS[@]}" about:blank &
+google-chrome "${CHROME_ARGS[@]}" about:blank &
 CHROME_PID=$!
 
 for _ in $(seq 1 50); do
