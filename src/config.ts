@@ -5,7 +5,7 @@ export const config = {
   enableNoVnc: process.env.CLAWDBOT_BROWSER_ENABLE_NOVNC !== "0",
   headless: process.env.CLAWDBOT_BROWSER_HEADLESS === "1",
   display: ":1",
-  home: "/home/sandbox-browser",
+  home: "/home/openclaw-browser",
 };
 
 export const chromeCdpPort =
