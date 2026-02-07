@@ -3,8 +3,37 @@ import { config, chromeCdpPort } from "../config";
 import { cleanupChromeLocks } from "../cleanup";
 import { log } from "../log";
 
+// Detect which browser binary to use
+async function getBrowserBinary(): Promise<string> {
+  // Check for google-chrome first (amd64), then chromium (arm64)
+  const checkBinary = (binary: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const proc = spawn({
+        cmd: ["which", binary],
+        stdout: "ignore",
+        stderr: "ignore",
+      });
+      proc.exited.then((code) => resolve(code === 0));
+    });
+  };
+
+  if (await checkBinary("google-chrome")) {
+    return "google-chrome";
+  }
+  if (await checkBinary("chromium")) {
+    return "chromium";
+  }
+  if (await checkBinary("chromium-browser")) {
+    return "chromium-browser";
+  }
+  throw new Error("No supported browser found (google-chrome or chromium)");
+}
+
 export async function startChrome(): Promise<Subprocess> {
   cleanupChromeLocks();
+
+  const browserBinary = await getBrowserBinary();
+  log(`Using browser: ${browserBinary}`);
 
   const args = [
     ...(config.headless ? ["--headless=new", "--disable-gpu"] : []),
@@ -24,7 +53,7 @@ export async function startChrome(): Promise<Subprocess> {
   ];
 
   const proc = spawn({
-    cmd: ["google-chrome", ...args],
+    cmd: [browserBinary, ...args],
     stdout: "inherit",
     stderr: "inherit",
     env: {
