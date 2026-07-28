@@ -14,4 +14,4 @@
 logs/
 
 # Bun
-node_modules/
+node_modules/target/

@@ -6,20 +6,29 @@ import { isRunning, killProcess } from "./process";
 import { startXvfb } from "./services/xvfb";
 import { startChrome } from "./services/chrome";
 import { startSocat } from "./services/socat";
+import { startHumanize } from "./services/humanize";
 import { startX11Vnc, startWebsockify } from "./services/vnc";
 
 let xvfbProc: Subprocess | null = null;
 let chromeProc: Subprocess | null = null;
-let socatProc: Subprocess | null = null;
+let cdpProxyProc: Subprocess | null = null;
 let x11vncProc: Subprocess | null = null;
 let websockifyProc: Subprocess | null = null;
+
+function startCdpProxy(): Subprocess {
+  return config.enableHumanize ? startHumanize() : startSocat();
+}
+
+function cdpProxyName(): string {
+  return config.enableHumanize ? "humanize proxy" : "socat";
+}
 
 async function shutdown() {
   log("Shutting down...");
 
   await Promise.all([
     killProcess(chromeProc, "Chrome"),
-    killProcess(socatProc, "socat"),
+    killProcess(cdpProxyProc, cdpProxyName()),
     killProcess(x11vncProc, "x11vnc"),
     killProcess(websockifyProc, "websockify"),
   ]);
@@ -48,10 +57,10 @@ async function monitor() {
       chromeProc = await startChrome();
     }
 
-    // Check socat
-    if (!isRunning(socatProc)) {
-      log("socat crashed, restarting...");
-      socatProc = startSocat();
+    // Check CDP proxy (humanize or socat)
+    if (!isRunning(cdpProxyProc)) {
+      log(`${cdpProxyName()} crashed, restarting...`);
+      cdpProxyProc = startCdpProxy();
     }
 
     // Check VNC services
@@ -79,8 +88,12 @@ async function main() {
   xvfbProc = await startXvfb();
   chromeProc = await startChrome();
 
-  socatProc = startSocat();
-  log("CDP proxy listening on port 9222");
+  cdpProxyProc = startCdpProxy();
+  log(
+    config.enableHumanize
+      ? "CDP proxy listening on port 9222 (humanized)"
+      : "CDP proxy listening on port 9222 (passthrough)",
+  );
 
   if (config.enableNoVnc && !config.headless) {
     x11vncProc = startX11Vnc();

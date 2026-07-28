@@ -28,6 +28,7 @@ services:
     environment:
       HEADLESS: "0"
       ENABLE_NOVNC: "1"
+      KEYBOARD_HUMANIZE: "1"
 
 volumes:
   chrome-data:
@@ -68,6 +69,44 @@ docker run -d \
 | -------- | ------- | ----------- |
 | `HEADLESS` | `0` | Run headless (`1` to enable) |
 | `ENABLE_NOVNC` | `1` | Enable noVNC (`0` to disable) |
+| `ENABLE_HUMANIZE` | `1` | Humanize CDP mouse/keyboard input (`0` for raw socat passthrough) |
+| `KEYBOARD_HUMANIZE` | `1` | Delay typed chars inside the humanize proxy (`0` to disable) |
+| `TYPE_DELAY_MIN` | `30` | Min delay (ms) before forwarding each `char` key event |
+| `TYPE_DELAY_MAX` | `120` | Max delay (ms) before forwarding each `char` key event |
+| `WORD_PAUSE_MIN` | `100` | Min pause (ms) before the next char after space/enter/./, |
+| `WORD_PAUSE_MAX` | `300` | Max pause (ms) before the next char after space/enter/./, |
+
+### Mouse & keyboard humanization (`ENABLE_HUMANIZE`)
+
+When enabled (default), a CDP proxy sits on port 9222 in front of Chrome's internal CDP port 9223. It intercepts `Input.dispatchMouseEvent` and injects physiologically realistic cursor paths before clicks:
+
+- **Meyer submovements** — primary ballistic move (85–95% of distance) plus 1–3 corrective submovements
+- **Flash–Hogan minimum-jerk** — bell-shaped velocity profile peaking ~40% through each submovement
+- **Fitts' Law timing** — movement duration scales with distance (≈150ms for 50px, 500ms+ for 500px)
+- **Tremor** — 8–12Hz sinusoidal noise, amplitude ∝ velocity, fading near the target
+- **Overshoot** — ~12.5% of moves overshoot slightly then correct
+
+It also intercepts `Input.dispatchKeyEvent` (when `KEYBOARD_HUMANIZE=1`):
+
+- **Per-character delay** — `char` events wait a random `TYPE_DELAY_MIN`–`TYPE_DELAY_MAX` ms before forwarding
+- **Word pauses** — after keyUp on space, enter, period, or comma, the next char waits `WORD_PAUSE_MIN`–`WORD_PAUSE_MAX` ms
+- **Modifiers / arrows** — non-char keyDown and all keyUp events forward immediately
+
+Set `ENABLE_HUMANIZE=0` to skip the proxy and use socat TCP passthrough instead (no mouse/keyboard injection). Set `KEYBOARD_HUMANIZE=0` to keep mouse humanization but pass key events through unchanged.
+
+Compose example:
+
+```yaml
+environment:
+  HEADLESS: "0"
+  ENABLE_NOVNC: "1"
+  ENABLE_HUMANIZE: "1"
+  KEYBOARD_HUMANIZE: "1"
+  TYPE_DELAY_MIN: "30"
+  TYPE_DELAY_MAX: "120"
+  WORD_PAUSE_MIN: "100"
+  WORD_PAUSE_MAX: "300"
+```
 
 ### Headless vs Non-Headless
 
